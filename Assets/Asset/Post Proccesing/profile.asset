@@ -18,10 +18,10 @@ MonoBehaviour:
     value: 1
   intensity:
     overrideState: 1
-    value: 5.1
+    value: 6.9
   threshold:
     overrideState: 1
-    value: 0.64
+    value: 0.4
   softKnee:
     overrideState: 1
     value: 0.436
@@ -150,14 +150,14 @@ MonoBehaviour:
     overrideState: 0
     value: 100
   lift:
-    overrideState: 0
+    overrideState: 1
     value: {x: 1, y: 1, z: 1, w: 0}
   gamma:
     overrideState: 1
-    value: {x: 1, y: 1, z: 1, w: -0.39094517}
+    value: {x: 1, y: 1, z: 1, w: -0.48663893}
   gain:
     overrideState: 1
-    value: {x: 1, y: 1, z: 1, w: 1}
+    value: {x: 1, y: 1, z: 1, w: 0.71291864}
   masterCurve:
     overrideState: 0
     value:
