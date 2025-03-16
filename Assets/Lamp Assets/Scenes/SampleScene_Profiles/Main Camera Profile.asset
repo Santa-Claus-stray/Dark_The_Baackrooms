@@ -1331,17 +1331,17 @@ MonoBehaviour:
     overrideState: 1
     value: 4.53
   threshold:
-    overrideState: 1
+    overrideState: 0
     value: 0.64
   softKnee:
     overrideState: 1
     value: 0.436
   clamp:
     overrideState: 0
-    value: 65472
+    value: 0.6
   diffusion:
     overrideState: 0
-    value: 7
+    value: 10
   anamorphicRatio:
     overrideState: 0
     value: 0
