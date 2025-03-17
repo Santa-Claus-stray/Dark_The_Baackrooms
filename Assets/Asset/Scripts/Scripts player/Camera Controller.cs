@@ -4,99 +4,172 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    public CharacterController controller; // Ссылка на компонент CharacterController
-    public Transform playerCamera; // Ссылка на камеру игрока
-    public float walkSpeed = 5f; // Скорость ходьбы
-    public float runSpeed = 10f; // Скорость бега
-    public float crouchSpeed = 2.5f; // Скорость при приседании
-    public float jumpHeight = 1f; // Высота прыжка
-    public float gravity = -9.81f; // Сила тяжести
-    public float mouseSensitivity = 100f; // Чувствительность мыши
-    
+    public CharacterController controller;
+    public Transform playerCamera;
+    public Animator animator; // РЎСЃС‹Р»РєР° РЅР° РєРѕРјРїРѕРЅРµРЅС‚ Р°РЅРёРјР°С‚РѕСЂР°
+    public float walkSpeed = 5f;
+    public float runSpeed = 10f;
+    public float crouchSpeed = 2.5f;
+    public float jumpHeight = 1f;
+    public float gravity = -9.81f;
+    public float mouseSensitivity = 100f;
+    public float crouchTransitionSpeed = 10f; // РЎРєРѕСЂРѕСЃС‚СЊ РїРµСЂРµС…РѕРґР° РІ РїСЂРёСЃРµРґ
+    public LayerMask obstacleLayer; // РЎР»РѕР№ РґР»СЏ РїСЂРѕРІРµСЂРєРё РїСЂРµРїСЏС‚СЃС‚РІРёР№ РЅР°Рґ РіРѕР»РѕРІРѕР№
 
-    private float ySpeed; // Скорость по оси Y
-    private bool isCrouching = false; // Флаг для определения состояния приседания
-    private float originalHeight; // Оригинальная высота контроллера
-    private float crouchedHeight = 0.5f; // Высота при приседании
-    
-
-    private float xRotation = 0f; // Переменная для хранения угла вращения по оси X
+    private float ySpeed;
+    private bool isCrouching = false;
+    private bool wantsToCrouch = false;
+    private float originalHeight;
+    private float crouchedHeight = 0.5f;
+    private float currentHeight;
+    private float targetHeight;
+    private float currentSpeed;
+    private float targetSpeed;
+    private Vector3 moveDirection = Vector3.zero;
+    private float xRotation = 0f;
+    private float standingCheckRadius = 0.2f;
+    private float originalCameraHeight; // РќР°С‡Р°Р»СЊРЅР°СЏ РІС‹СЃРѕС‚Р° РєР°РјРµСЂС‹
+    private Vector3 cameraOffset; // РЎРјРµС‰РµРЅРёРµ РєР°РјРµСЂС‹ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ С†РµРЅС‚СЂР° РєРѕРЅС‚СЂРѕР»Р»РµСЂР°
 
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked; // Скрыть курсор и заблокировать его в центре экрана
-        originalHeight = controller.height; // Запоминаем оригинальную высоту контроллера
+        Cursor.lockState = CursorLockMode.Locked;
+        originalHeight = controller.height;
+        currentHeight = originalHeight;
+        targetHeight = originalHeight;
+        currentSpeed = walkSpeed;
+        targetSpeed = walkSpeed;
+
+        // РЎРѕС…СЂР°РЅСЏРµРј РЅР°С‡Р°Р»СЊРЅРѕРµ РїРѕР»РѕР¶РµРЅРёРµ РєР°РјРµСЂС‹
+        originalCameraHeight = playerCamera.localPosition.y;
+        cameraOffset = playerCamera.localPosition;
+
+        // РџРѕР»СѓС‡Р°РµРј РєРѕРјРїРѕРЅРµРЅС‚ Р°РЅРёРјР°С‚РѕСЂР°, РµСЃР»Рё РѕРЅ РЅРµ Р±С‹Р» РЅР°Р·РЅР°С‡РµРЅ
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
+        
+        // РћС‚РєР»СЋС‡Р°РµРј Root Motion
+        if (animator != null)
+        {
+            animator.applyRootMotion = false;
+        }
     }
 
     void Update()
     {
-        MovePlayer(); // Обработка движения игрока
-        RotateCamera(); // Обработка вращения камеры и персонажа
-        HandleJumpAndCrouch(); // Обработка прыжка и приседания
+        HandleCrouchInput();
+        MovePlayer();
+        RotateCamera();
+        HandleJump();
+        UpdateCrouch();
+    }
+
+    void HandleCrouchInput()
+    {
+        // РџСЂРёСЃРµРґ РїСЂРё СѓРґРµСЂР¶Р°РЅРёРё Р»РµРІРѕРіРѕ Control
+        wantsToCrouch = Input.GetKey(KeyCode.LeftControl);
+    }
+
+    void UpdateCrouch()
+    {
+        // РџСЂРѕРІРµСЂСЏРµРј, РјРѕР¶РЅРѕ Р»Рё РІСЃС‚Р°С‚СЊ
+        bool canStand = !Physics.SphereCast(
+            transform.position + Vector3.up * (crouchedHeight - 0.1f),
+            standingCheckRadius,
+            Vector3.up,
+            out RaycastHit hit,
+            originalHeight - crouchedHeight + 0.1f,
+            obstacleLayer
+        );
+
+        // РћРїСЂРµРґРµР»СЏРµРј С†РµР»РµРІСѓСЋ РІС‹СЃРѕС‚Сѓ
+        targetHeight = (wantsToCrouch || !canStand) ? crouchedHeight : originalHeight;
+        
+        // РџР»Р°РІРЅРѕ РјРµРЅСЏРµРј С‚РµРєСѓС‰СѓСЋ РІС‹СЃРѕС‚Сѓ
+        currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
+        controller.height = currentHeight;
+
+        // РћР±РЅРѕРІР»СЏРµРј СЃРѕСЃС‚РѕСЏРЅРёРµ РїСЂРёСЃРµРґР°
+        isCrouching = Mathf.Abs(currentHeight - crouchedHeight) < 0.01f;
+
+        // РљРѕСЂСЂРµРєС‚РёСЂСѓРµРј РїРѕР·РёС†РёСЋ С†РµРЅС‚СЂР° РєРѕРЅС‚СЂРѕР»Р»РµСЂР°
+        Vector3 center = controller.center;
+        center.y = currentHeight / 2f;
+        controller.center = center;
+
+        // РћР±РЅРѕРІР»СЏРµРј РїРѕР·РёС†РёСЋ РєР°РјРµСЂС‹
+        Vector3 newCameraPos = cameraOffset;
+        newCameraPos.y = Mathf.Lerp(originalCameraHeight * 0.5f, originalCameraHeight, (currentHeight - crouchedHeight) / (originalHeight - crouchedHeight));
+        playerCamera.localPosition = newCameraPos;
     }
 
     void MovePlayer()
     {
-        // Получение ввода
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
-        // Определение скорости движения
-        float speed = isCrouching ? crouchSpeed : (Input.GetKey(KeyCode.LeftShift) ? runSpeed : walkSpeed);
+        // РћРїСЂРµРґРµР»СЏРµРј С†РµР»РµРІСѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ
+        bool isRunning = Input.GetKey(KeyCode.LeftShift) && !isCrouching;
+        targetSpeed = isCrouching ? crouchSpeed : (isRunning ? runSpeed : walkSpeed);
+        
+        // РџР»Р°РІРЅРѕ РјРµРЅСЏРµРј С‚РµРєСѓС‰СѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ
+        currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.deltaTime * 10f);
+
+        // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РЅР°РїСЂР°РІР»РµРЅРёРµ РґРІРёР¶РµРЅРёСЏ
         Vector3 move = transform.right * moveX + transform.forward * moveZ;
+        move = Vector3.ClampMagnitude(move, 1f);
 
-        // Применение скорости к контроллеру
-        controller.Move(move * speed * Time.deltaTime);
+        // РћР±РЅРѕРІР»СЏРµРј РїР°СЂР°РјРµС‚СЂС‹ Р°РЅРёРјР°С†РёРё
+        if (animator != null)
+        {
+            float moveAmount = move.magnitude;
+            animator.SetBool("IsRunning", isRunning && moveAmount > 0.1f);
+            animator.SetFloat("Speed", moveAmount, 0.1f, Time.deltaTime);
+            animator.SetBool("IsCrouching", isCrouching);
+        }
 
-        // Применение гравитации
-        ySpeed += gravity * Time.deltaTime;
-        controller.Move(new Vector3(0, ySpeed, 0) * Time.deltaTime);
+        // РџСЂРёРјРµРЅСЏРµРј РїР»Р°РІРЅРѕРµ СѓСЃРєРѕСЂРµРЅРёРµ Рё Р·Р°РјРµРґР»РµРЅРёРµ
+        moveDirection = Vector3.Lerp(moveDirection, move * currentSpeed, Time.deltaTime * 15f);
+
+        // РџСЂРёРјРµРЅСЏРµРј РіСЂР°РІРёС‚Р°С†РёСЋ
+        if (controller.isGrounded)
+        {
+            ySpeed = -2f;
+            if (moveDirection.magnitude < 0.1f)
+            {
+                moveDirection = Vector3.zero;
+            }
+        }
+        else
+        {
+            ySpeed += gravity * Time.deltaTime;
+        }
+
+        // РћР±СЉРµРґРёРЅСЏРµРј РґРІРёР¶РµРЅРёРµ
+        Vector3 finalMove = moveDirection + new Vector3(0, ySpeed, 0);
+        controller.Move(finalMove * Time.deltaTime);
+    }
+
+    void HandleJump()
+    {
+        if (Input.GetButtonDown("Jump") && controller.isGrounded && !isCrouching)
+        {
+            ySpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        }
     }
 
     void RotateCamera()
     {
-        // Получение ввода мыши
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-        // Вращение камеры по оси Y (горизонтальное вращение)
-        transform.Rotate(Vector3.up * mouseX);
-
-        // Вращение камеры по оси X (вертикальное вращение)
         xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f); // Ограничение вращения по оси X
-        playerCamera.localEulerAngles = new Vector3(xRotation, 0f, 0f); // Применяем вращение к камере
+        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
-        // Вращение персонажа в направлении взгляда камеры (по оси Y)
-        Vector3 direction = playerCamera.forward;
-        direction.y = 0; // Убираем вертикальную составляющую, чтобы персонаж не наклонялся
-        if (direction != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f); // Плавное вращение
-        }
-    }
-
-    void HandleJumpAndCrouch()
-    {
-        // Прыжок
-        if (Input.GetButtonDown("Jump") && controller.isGrounded)
-        {
-            ySpeed = Mathf.Sqrt(jumpHeight * -2f * gravity); // Расчет начальной скорости прыжка
-        }
-
-        // Приседание
-        if (Input.GetKeyDown(KeyCode.LeftControl))
-        {
-            isCrouching = true;
-            controller.height = crouchedHeight; // Уменьшаем высоту контроллера
-        }
-
-        if (Input.GetKeyUp(KeyCode.LeftControl))
-        {
-            isCrouching = false;
-            controller.height = originalHeight; // Восстанавливаем оригинальную высоту контроллера
-        }
+        playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        transform.Rotate(Vector3.up * mouseX);
     }
 }
 
