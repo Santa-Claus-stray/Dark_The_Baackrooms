@@ -66,15 +66,10 @@ public class PlayerController : MonoBehaviour
         Vector3 checkPosition = transform.position + Vector3.down * 0.1f;
         isGrounded = Physics.CheckSphere(checkPosition, groundCheckRadius, groundLayer);
         
-        // Отладочная информация
-        Debug.DrawLine(checkPosition, checkPosition + Vector3.down * groundCheckRadius, 
-            isGrounded ? Color.green : Color.red);
-        
         // Обновляем время последнего касания земли
         if (isGrounded)
         {
             lastGroundedTime = Time.time;
-            Debug.Log($"Grounded at position: {transform.position}");
         }
     }
 
@@ -148,14 +143,13 @@ public class PlayerController : MonoBehaviour
         else
         {
             ySpeed += gravity * Time.deltaTime;
-            Debug.Log($"In air. ySpeed: {ySpeed}, Position: {transform.position}");
         }
 
         // Обновляем анимацию
         if (animator != null)
         {
             float moveAmount = move.magnitude;
-            animator.SetBool("IsRunning", isRunning && moveAmount > 0.1f);
+            animator.SetBool("isRunning", isRunning && moveAmount > 0.1f);
             animator.SetFloat("Speed", moveAmount, 0.1f, Time.deltaTime);
             animator.SetBool("IsCrouching", isCrouching);
             animator.SetBool("IsGrounded", isGrounded);
@@ -170,14 +164,7 @@ public class PlayerController : MonoBehaviour
 
         // Применяем движение
         Vector3 finalMove = moveDirection + new Vector3(0, ySpeed, 0);
-        CollisionFlags collisionFlags = controller.Move(finalMove * Time.deltaTime);
-        
-        // Проверяем столкновения
-        if ((collisionFlags & CollisionFlags.Below) != 0)
-        {
-            Debug.Log("Hit ground!");
-            isGrounded = true;
-        }
+        controller.Move(finalMove * Time.deltaTime);
     }
 
     void HandleJump()
@@ -187,15 +174,11 @@ public class PlayerController : MonoBehaviour
             // Проверяем, можем ли мы прыгнуть (на земле или в пределах coyote time)
             bool canJump = isGrounded || (Time.time - lastGroundedTime <= coyoteTime);
             
-            Debug.Log($"Jump attempt: canJump={canJump}, isGrounded={isGrounded}, isCrouching={isCrouching}, " +
-                     $"coyoteTime={Time.time - lastGroundedTime}, ySpeed={ySpeed}, Position={transform.position}");
-            
+            // Проверяем, что персонаж не приседает
             if (canJump && !isCrouching)
             {
-                Debug.Log("Jumping!");
                 ySpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 isJumping = true;
-                Debug.Log($"Jump force: {ySpeed}, jumpHeight: {jumpHeight}, gravity: {gravity}");
             }
         }
     }
