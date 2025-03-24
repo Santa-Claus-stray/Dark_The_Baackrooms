@@ -24,7 +24,6 @@ public class PauseMenuController : MonoBehaviour
     public void Pause()
     {
         pauseMenuUI.SetActive(true); // Показываем меню паузы
-        Time.timeScale = 0f; // Останавливаем время
         isPaused = true; // Устанавливаем флаг паузы в true
         Cursor.visible = true; // Показываем курсор
         Cursor.lockState = CursorLockMode.None; // Разблокируем курсор
@@ -33,7 +32,6 @@ public class PauseMenuController : MonoBehaviour
     public void Resume()
     {
         pauseMenuUI.SetActive(false); // Скрываем меню паузы
-        Time.timeScale = 1f; // Возобновляем время
         isPaused = false; // Устанавливаем флаг паузы в false
         Cursor.visible = false; // Скрываем курсор
         Cursor.lockState = CursorLockMode.Locked; // Блокируем курсор в центре экрана
