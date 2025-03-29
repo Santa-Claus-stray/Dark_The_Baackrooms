@@ -8,10 +8,12 @@ public class ButtonGameObjectSwitcher : MonoBehaviour
     public GameObject object1; // Первый GameObject
     public GameObject object2; // Второй GameObject
     public GameObject object3; // Третий GameObject
+    public GameObject object4; // Третий GameObject
 
     public Button button1; // Первая кнопка
     public Button button2; // Вторая кнопка
     public Button button3; // Третья кнопка
+    public Button button4; // Третья кнопка
 
     void Start()
     {
@@ -22,6 +24,7 @@ public class ButtonGameObjectSwitcher : MonoBehaviour
         button1.onClick.AddListener(() => ShowObject(object1));
         button2.onClick.AddListener(() => ShowObject(object2));
         button3.onClick.AddListener(() => ShowObject(object3));
+        button4.onClick.AddListener(() => ShowObject(object4));
     }
 
     // Метод для отображения выбранного GameObject
@@ -30,6 +33,7 @@ public class ButtonGameObjectSwitcher : MonoBehaviour
         object1.SetActive(false);
         object2.SetActive(false);
         object3.SetActive(false);
+        object4.SetActive(false);
 
         objectToShow.SetActive(true);
     }

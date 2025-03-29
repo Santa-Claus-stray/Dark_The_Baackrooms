@@ -46884,14 +46884,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7c1d0dd72e06ed49b25ed5d64062ba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controller: {fileID: 1349400568}
-  playerCamera: {fileID: 645815529}
-  walkSpeed: 60
-  runSpeed: 120
-  crouchSpeed: 7
-  jumpHeight: 12
-  gravity: -200
+  playerBody: {fileID: 645815529}
   mouseSensitivity: 750
+  originalCameraHeight: 1.6
+  crouchedCameraHeight: 0.8
+  cameraTransitionSpeed: 10
+  jumpCameraOffset: 0.5
 --- !u!1 &1355479858
 GameObject:
   m_ObjectHideFlags: 0

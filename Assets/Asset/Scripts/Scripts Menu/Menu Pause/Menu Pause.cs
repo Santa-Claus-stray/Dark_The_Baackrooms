@@ -4,6 +4,14 @@ public class PauseMenuController : MonoBehaviour
 {
     public GameObject pauseMenuUI; // Ссылка на UI меню паузы
     private bool isPaused = false; // Флаг для отслеживания состояния паузы
+    public GameObject player; // Ссылка на объект игрока
+    private PlayerMovement playerMovement; // Компонент управления движением игрока
+
+    void Start()
+    {
+        // Получаем компонент управления движением игрока
+        playerMovement = player.GetComponent<PlayerMovement>();
+    }
 
     void Update()
     {
@@ -27,6 +35,12 @@ public class PauseMenuController : MonoBehaviour
         isPaused = true; // Устанавливаем флаг паузы в true
         Cursor.visible = true; // Показываем курсор
         Cursor.lockState = CursorLockMode.None; // Разблокируем курсор
+
+        // Отключаем управление движением игрока
+        if (playerMovement != null)
+        {
+            playerMovement.enabled = false; // Отключаем компонент управления движением
+        }
     }
 
     public void Resume()
@@ -34,7 +48,13 @@ public class PauseMenuController : MonoBehaviour
         pauseMenuUI.SetActive(false); // Скрываем меню паузы
         isPaused = false; // Устанавливаем флаг паузы в false
         Cursor.visible = false; // Скрываем курсор
-        Cursor.lockState = CursorLockMode.Locked; // Блокируем курсор в центре экрана
+        Cursor.lockState = CursorLockMode.Locked; // Блокируем курсор
+
+        // Включаем управление движением игрока
+        if (playerMovement != null)
+        {
+            playerMovement.enabled = true; // Включаем компонент управления движением
+        }
     }
 
     public bool IsPaused
@@ -42,4 +62,5 @@ public class PauseMenuController : MonoBehaviour
         get { return isPaused; } // Свойство для доступа к состоянию паузы
     }
 }
+
 

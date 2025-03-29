@@ -48914,14 +48914,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7c1d0dd72e06ed49b25ed5d64062ba2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controller: {fileID: 1127032923}
-  playerCamera: {fileID: 963180540}
-  walkSpeed: 130
-  runSpeed: 200
-  crouchSpeed: 7
-  jumpHeight: 5
-  gravity: -60
-  mouseSensitivity: 750
+  playerBody: {fileID: 1127032922}
+  mouseSensitivity: 400
+  originalCameraHeight: 1.6
+  crouchedCameraHeight: 0.8
+  cameraTransitionSpeed: 10
+  jumpCameraOffset: 0.5
 --- !u!1001 &1127608264
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -53717,7 +53715,7 @@ Transform:
   m_GameObject: {fileID: 1239186643}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1204.7148, y: -1360.2911, z: 857.12646}
+  m_LocalPosition: {x: -1472.1, y: -1360.2911, z: 882.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
