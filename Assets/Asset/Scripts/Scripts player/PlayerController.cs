@@ -13,6 +13,7 @@ public class PlayerController : MonoBehaviour
     public float crouchTransitionSpeed = 10f;
     public LayerMask groundLayer; // Слой для проверки земли
     public float groundCheckRadius = 0.2f; // Радиус проверки земли
+    public float jumpForce = 5f; // Определите силу прыжка
 
     private float ySpeed;
     private bool isCrouching = false;
@@ -32,44 +33,50 @@ public class PlayerController : MonoBehaviour
 
     void Start()
     {
+        controller = GetComponent<CharacterController>();
+        if (controller == null)
+        {
+            Debug.LogError("CharacterController not found on " + gameObject.name);
+            return; // Прекращаем выполнение метода, если контроллер не найден
+        }
+
         originalHeight = controller.height;
         currentHeight = originalHeight;
         targetHeight = originalHeight;
         currentSpeed = walkSpeed;
         targetSpeed = walkSpeed;
 
-        if (animator == null)
-        {
-            animator = GetComponentInChildren<Animator>();
-        }
-        
+        animator = GetComponentInChildren<Animator>();
+
         if (animator != null)
         {
             animator.applyRootMotion = false;
         }
+
+        // Для отладки
+        Debug.Log("Original Height: " + originalHeight);
+        Debug.Log("Current Speed: " + currentSpeed);
     }
 
     void Update()
     {
         // Проверяем, находится ли персонаж на земле
         CheckGrounded();
-        
         HandleCrouchInput();
+        UpdateCrouch();
         MovePlayer();
         HandleJump();
-        UpdateCrouch();
     }
 
     void CheckGrounded()
     {
-        // Проверяем землю с помощью Physics.CheckSphere
-        Vector3 checkPosition = transform.position + Vector3.down * 0.1f;
-        isGrounded = Physics.CheckSphere(checkPosition, groundCheckRadius, groundLayer);
-        
-        // Обновляем время последнего касания земли
+        isGrounded = Physics.CheckSphere(transform.position, groundCheckRadius, groundLayer);
+
         if (isGrounded)
         {
-            lastGroundedTime = Time.time;
+            lastGroundedTime = Time.time; // Обновляем время последнего касания земли
+            ySpeed = 0; // Сбрасываем вертикальную скорость при касании земли
+            isJumping = false; // Сбрасываем состояние прыжка
         }
     }
 
@@ -79,43 +86,34 @@ public class PlayerController : MonoBehaviour
     }
 
     void UpdateCrouch()
+{
+    wantsToCrouch = Input.GetKey(KeyCode.LeftControl); // Проверяем, нажата ли клавиша
+
+    if (wantsToCrouch && !isCrouching)
     {
-        bool canStand = !Physics.SphereCast(
-            transform.position + Vector3.up * (crouchedHeight - 0.1f),
-            standingCheckRadius,
-            Vector3.up,
-            out RaycastHit hit,
-            originalHeight - crouchedHeight + 0.1f,
-            groundLayer
-        );
-
-        targetHeight = (wantsToCrouch || !canStand) ? crouchedHeight : originalHeight;
-        
-        // Сохраняем текущую позицию
-        Vector3 currentPosition = transform.position;
-        
-        // Изменяем высоту контроллера
-        float heightDifference = currentHeight - targetHeight;
-        currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
-        controller.height = currentHeight;
-
-        // Корректируем позицию, чтобы персонаж не поднимался
-        Vector3 newPosition = currentPosition;
-        newPosition.y -= heightDifference;
-        transform.position = newPosition;
-
-        isCrouching = Mathf.Abs(currentHeight - crouchedHeight) < 0.01f;
-
-        if (cameraController != null)
-        {
-            cameraController.SetCrouchState(isCrouching);
-        }
-
-        // Обновляем центр контроллера
-        Vector3 center = controller.center;
-        center.y = currentHeight / 2f;
-        controller.center = center;
+        isCrouching = true; // Переключаем состояние на приседание
+        targetHeight = crouchedHeight; // Целевая высота - высота приседа
+        animator.SetBool("IsCrouching", true); // Анимация приседания
+        Debug.Log("Начало приседания");
     }
+    else if (!wantsToCrouch && isCrouching)
+    {
+        isCrouching = false; // Переключаем состояние на стояние
+        targetHeight = originalHeight; // Целевая высота - оригинальная высота
+        animator.SetBool("IsCrouching", false); // Анимация стояния
+        Debug.Log("Возвращение в стоячее положение");
+    }
+
+    // Плавный переход высоты
+    currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
+    controller.height = currentHeight; // Устанавливаем высоту контроллера
+
+    // Обновляем позицию камеры
+    Vector3 cameraOffset = new Vector3(0, currentHeight / 2, 0); // Смещение камеры
+    cameraController.transform.localPosition = cameraOffset; // Устанавливаем позицию камеры
+}
+
+
 
     void MovePlayer()
     {
@@ -130,11 +128,20 @@ public class PlayerController : MonoBehaviour
         move = Vector3.ClampMagnitude(move, 1f);
 
         moveDirection = Vector3.Lerp(moveDirection, move * currentSpeed, Time.deltaTime * 15f);
-        
+
         if (isGrounded)
         {
+            // Устанавливаем небольшое значение ySpeed для "погружения" в землю
             ySpeed = -2f;
             isJumping = false;
+
+            // Обработка прыжка
+            if (Input.GetKeyDown(KeyCode.Space)) // Проверка нажатия пробела
+            {
+                ySpeed = jumpForce; // Устанавливаем ySpeed на желаемую величину для прыжка
+                isJumping = true;
+            }
+
             if (moveDirection.magnitude < 0.1f)
             {
                 moveDirection = Vector3.zero;
@@ -142,7 +149,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            ySpeed += gravity * Time.deltaTime;
+            ySpeed += gravity * Time.deltaTime; // Применяем гравитацию
         }
 
         // Обновляем анимацию
@@ -169,17 +176,26 @@ public class PlayerController : MonoBehaviour
 
     void HandleJump()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        // Проверяем, находится ли персонаж на земле
+        isGrounded = Physics.CheckSphere(transform.position, groundCheckRadius, groundLayer);
+
+        // Если персонаж на земле и нажата клавиша пробела
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
         {
-            // Проверяем, можем ли мы прыгнуть (на земле или в пределах coyote time)
-            bool canJump = isGrounded || (Time.time - lastGroundedTime <= coyoteTime);
-            
-            // Проверяем, что персонаж не приседает
-            if (canJump && !isCrouching)
-            {
-                ySpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                isJumping = true;
-            }
+            // Устанавливаем вертикальную скорость для прыжка
+            ySpeed = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            isJumping = true; // Устанавливаем состояние прыжка
+        }
+        else if (!isGrounded)
+        {
+            // Применяем гравитацию, если не на земле
+            ySpeed += gravity * Time.deltaTime;
+        }
+        else
+        {
+            // Если персонаж на земле, сбрасываем вертикальную скорость
+            ySpeed = -2f; // Небольшое значение, чтобы избежать прилипания к земле
+            isJumping = false; // Сбрасываем состояние прыжка
         }
     }
 
