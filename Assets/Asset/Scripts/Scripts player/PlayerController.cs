@@ -14,10 +14,15 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer; // Слой для проверки земли
     public float groundCheckRadius = 0.2f; // Радиус проверки земли
     public float jumpForce = 5f; // Определите силу прыжка
+    public Camera playerCamera;
+    public float standingCameraHeight = 1.7f; // Высота камеры, когда персонаж стоит
+    public float crouchingCameraHeight = 0.5f; // Высота камеры, когда персонаж приседает
+
+
 
     private float ySpeed;
     private bool isCrouching = false;
-    private bool wantsToCrouch = false;
+    private bool wantsToCrouch;
     private float originalHeight;
     private float crouchedHeight = 0.5f;
     private float currentHeight;
@@ -27,7 +32,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection = Vector3.zero;
     private float standingCheckRadius = 0.2f;
     private bool isGrounded;
-    private bool isJumping = false;
+    private bool isJumping;
     private float lastGroundedTime;
     private float coyoteTime = 0.2f; // Время, в течение которого можно прыгнуть после схода с платформы
 
@@ -41,6 +46,7 @@ public class PlayerController : MonoBehaviour
         }
 
         originalHeight = controller.height;
+        controller.height = currentHeight;
         currentHeight = originalHeight;
         targetHeight = originalHeight;
         currentSpeed = walkSpeed;
@@ -70,7 +76,8 @@ public class PlayerController : MonoBehaviour
 
     void CheckGrounded()
     {
-        isGrounded = Physics.CheckSphere(transform.position, groundCheckRadius, groundLayer);
+        Vector3 spherePosition = transform.position + Vector3.down * (groundCheckRadius + 0.1f);
+        isGrounded = Physics.CheckSphere(spherePosition, groundCheckRadius, groundLayer);
 
         if (isGrounded)
         {
@@ -80,38 +87,65 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
     void HandleCrouchInput()
     {
-        wantsToCrouch = Input.GetKey(KeyCode.LeftControl);
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            wantsToCrouch = true; // Игрок хочет присесть
+        }
+        else if (Input.GetKeyUp(KeyCode.LeftControl))
+        {
+            wantsToCrouch = false; // Игрок отпустил клавишу
+        }
     }
 
     void UpdateCrouch()
-{
-    wantsToCrouch = Input.GetKey(KeyCode.LeftControl); // Проверяем, нажата ли клавиша
-
-    if (wantsToCrouch && !isCrouching)
     {
-        isCrouching = true; // Переключаем состояние на приседание
-        targetHeight = crouchedHeight; // Целевая высота - высота приседа
-        animator.SetBool("IsCrouching", true); // Анимация приседания
-        Debug.Log("Начало приседания");
-    }
-    else if (!wantsToCrouch && isCrouching)
-    {
-        isCrouching = false; // Переключаем состояние на стояние
-        targetHeight = originalHeight; // Целевая высота - оригинальная высота
-        animator.SetBool("IsCrouching", false); // Анимация стояния
-        Debug.Log("Возвращение в стоячее положение");
+        // Проверяем, хочет ли игрок присесть
+        if (wantsToCrouch && !isCrouching)
+        {
+            isCrouching = true;
+            targetHeight = crouchedHeight;
+            currentSpeed = crouchSpeed; // Устанавливаем скорость при приседании
+            animator.SetTrigger("Crouch");
+        }
+        else if (!wantsToCrouch && isCrouching)
+        {
+            isCrouching = false;
+            targetHeight = originalHeight;
+            currentSpeed = walkSpeed; // Восстанавливаем скорость
+            animator.SetTrigger("Stand");
+        }
+
+        // Плавно изменяем текущую высоту
+        currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
+        controller.height = currentHeight;
+
+        // Обновляем позицию контроллера
+        Vector3 controllerPosition = transform.position;
+        controllerPosition.y = currentHeight / 2; // Устанавливаем позицию контроллера в зависимости от его высоты
+        controller.transform.position = controllerPosition;
+
+        // Обновляем позицию камеры
+        Vector3 cameraPosition = transform.position;
+
+        // Плавно изменяем высоту камеры
+        float cameraTargetHeight = isCrouching ? crouchingCameraHeight : standingCameraHeight;
+        cameraPosition.y += Mathf.Lerp(playerCamera.transform.position.y, cameraTargetHeight, Time.deltaTime * crouchTransitionSpeed);
+
+        // Обновляем позицию камеры
+        playerCamera.transform.position = cameraPosition;
+
+        // Если необходимо, можно также обновить направление взгляда камеры
+        playerCamera.transform.LookAt(transform.position + transform.forward); // Это просто пример
+
+        // Логирование для отладки
+        Debug.Log($"Current Height: {currentHeight}, Target Height: {targetHeight}, Camera Position: {cameraPosition}");
     }
 
-    // Плавный переход высоты
-    currentHeight = Mathf.Lerp(currentHeight, targetHeight, Time.deltaTime * crouchTransitionSpeed);
-    controller.height = currentHeight; // Устанавливаем высоту контроллера
 
-    // Обновляем позицию камеры
-    Vector3 cameraOffset = new Vector3(0, currentHeight / 2, 0); // Смещение камеры
-    cameraController.transform.localPosition = cameraOffset; // Устанавливаем позицию камеры
-}
+
 
 
 
@@ -120,59 +154,45 @@ public class PlayerController : MonoBehaviour
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
-        bool isRunning = Input.GetKey(KeyCode.LeftShift) && !isCrouching;
-        targetSpeed = isCrouching ? crouchSpeed : (isRunning ? runSpeed : walkSpeed);
-        currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, Time.deltaTime * 10f);
-
+        // Определяем направление движения
         Vector3 move = transform.right * moveX + transform.forward * moveZ;
-        move = Vector3.ClampMagnitude(move, 1f);
 
-        moveDirection = Vector3.Lerp(moveDirection, move * currentSpeed, Time.deltaTime * 15f);
-
-        if (isGrounded)
+        // Устанавливаем скорость в зависимости от состояния
+        if (isCrouching)
         {
-            // Устанавливаем небольшое значение ySpeed для "погружения" в землю
-            ySpeed = -2f;
-            isJumping = false;
-
-            // Обработка прыжка
-            if (Input.GetKeyDown(KeyCode.Space)) // Проверка нажатия пробела
-            {
-                ySpeed = jumpForce; // Устанавливаем ySpeed на желаемую величину для прыжка
-                isJumping = true;
-            }
-
-            if (moveDirection.magnitude < 0.1f)
-            {
-                moveDirection = Vector3.zero;
-            }
+            currentSpeed = crouchSpeed; // Если приседаем, используем скорость приседания
+        }
+        else if (Input.GetKey(KeyCode.LeftShift))
+        {
+            currentSpeed = runSpeed; // Если удерживаем Shift, используем скорость бега
         }
         else
         {
-            ySpeed += gravity * Time.deltaTime; // Применяем гравитацию
+            currentSpeed = walkSpeed; // В противном случае используем скорость ходьбы
         }
 
-        // Обновляем анимацию
+        // Применяем движение с учетом текущей скорости
+        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // Обновляем анимации
+        UpdateAnimation(move);
+    }
+
+    void UpdateAnimation(Vector3 move)
+    {
+        float moveAmount = move.magnitude;
+
+        // Обновляем параметры анимации
         if (animator != null)
         {
-            float moveAmount = move.magnitude;
-            animator.SetBool("isRunning", isRunning && moveAmount > 0.1f);
-            animator.SetFloat("Speed", moveAmount, 0.1f, Time.deltaTime);
+            animator.SetBool("isRunning", currentSpeed == runSpeed && moveAmount > 0.1f);
+            animator.SetFloat("Speed", moveAmount);
             animator.SetBool("IsCrouching", isCrouching);
             animator.SetBool("IsGrounded", isGrounded);
             animator.SetBool("IsJumping", isJumping);
         }
-
-        // Уведомляем камеру о состоянии прыжка
-        if (cameraController != null)
-        {
-            cameraController.SetJumpState(!isGrounded);
-        }
-
-        // Применяем движение
-        Vector3 finalMove = moveDirection + new Vector3(0, ySpeed, 0);
-        controller.Move(finalMove * Time.deltaTime);
     }
+
 
     void HandleJump()
     {
@@ -202,13 +222,19 @@ public class PlayerController : MonoBehaviour
     // Визуализация отладочной информации в редакторе
     void OnDrawGizmos()
     {
+        // Проверка на null для предотвращения ошибок
+        if (controller == null) return;
+
         // Визуализация проверки земли
         Gizmos.color = isGrounded ? Color.green : Color.red;
-        Gizmos.DrawWireSphere(transform.position + Vector3.down * 0.1f, groundCheckRadius);
-        
+        float groundCheckOffset = 0.1f; // Константа для смещения вниз
+        Gizmos.DrawWireSphere(transform.position + Vector3.down * groundCheckOffset, groundCheckRadius);
+
         // Визуализация CharacterController
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireCube(transform.position + controller.center, 
-            new Vector3(controller.radius * 2, controller.height, controller.radius * 2));
+        Vector3 centerPosition = transform.position + controller.center;
+        Vector3 size = new Vector3(controller.radius * 2, controller.height, controller.radius * 2);
+        Gizmos.DrawWireCube(centerPosition, size);
     }
-} 
+
+}
