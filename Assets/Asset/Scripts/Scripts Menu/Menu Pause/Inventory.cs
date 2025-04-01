@@ -6,6 +6,7 @@ public class InventoryController : MonoBehaviour
     public GameObject inventoryUI; // Ссылка на UI инвентаря
     private bool isInventoryOpen = false; // Флаг для отслеживания состояния инвентаря
     private PauseMenuController pauseMenuController; // Ссылка на контроллер меню паузы
+    public GameObject player;
 
     void Start()
     {
@@ -15,7 +16,7 @@ public class InventoryController : MonoBehaviour
 
     void Update()
     {
-        // Проверяем, нажата ли клавиша I для открытия/закрытия инвентаря
+        // Проверяем, нажата ли клавиша Tab для открытия/закрытия инвентаря
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             if (isInventoryOpen)
