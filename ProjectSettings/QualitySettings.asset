@@ -268,7 +268,7 @@ QualitySettings:
     globalTextureMipmapLimit: 0
     textureMipmapLimitSettings: []
     anisotropicTextures: 2
-    antiAliasing: 2
+    antiAliasing: 4
     softParticles: 1
     softVegetation: 1
     realtimeReflectionProbes: 1
@@ -291,11 +291,11 @@ QualitySettings:
     asyncUploadPersistentBuffer: 1
     resolutionScalingFixedDPIFactor: 1
     customRenderPipeline: {fileID: 0}
-    terrainQualityOverrides: 0
+    terrainQualityOverrides: 10
     terrainPixelError: 1
     terrainDetailDensityScale: 1
-    terrainBasemapDistance: 1000
-    terrainDetailDistance: 80
+    terrainBasemapDistance: 90
+    terrainDetailDistance: 852
     terrainTreeDistance: 5000
     terrainBillboardStart: 50
     terrainFadeLength: 5
