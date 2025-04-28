@@ -11607,7 +11607,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &682597346
 Transform:
   m_ObjectHideFlags: 0
@@ -13956,7 +13956,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 900x900
+  m_text: 854 x 480
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: e73a58f6e2794ae7b1b7e50b7fb811b0, type: 2}
@@ -16059,11 +16059,13 @@ MonoBehaviour:
   m_Value: 0
   m_Options:
     m_Options:
-    - m_Text: 900x900
+    - m_Text: 854 x 480
       m_Image: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-    - m_Text: 1600x1024
+    - m_Text: 1280 x 720
       m_Image: {fileID: 0}
-    - m_Text: 1920x1080
+    - m_Text: 1920 x 1080
+      m_Image: {fileID: 0}
+    - m_Text: 2560 x 1440
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
@@ -22085,7 +22087,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 25.11, y: 0.81}
+  m_AnchoredPosition: {x: 27.36, y: 0.81}
   m_SizeDelta: {x: 350, y: 50.0191}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1300856754
@@ -36058,13 +36060,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2020607131}
+  - component: {fileID: 2020607132}
   m_Layer: 0
   m_Name: VideoSettings
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2020607131
 Transform:
   m_ObjectHideFlags: 0
@@ -36104,6 +36107,26 @@ Transform:
   - {fileID: 1392764569}
   m_Father: {fileID: 995596204}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2020607132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2020607130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3be916d788d1a6e4a909ad0239662256, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  screenModeDropdown: {fileID: 0}
+  resolutionDropdown: {fileID: 0}
+  frameRateDropdown: {fileID: 0}
+  qualityDropdown: {fileID: 0}
+  shadowQualityDropdown: {fileID: 0}
+  antiAliasingDropdown: {fileID: 0}
+  effectsQualityDropdown: {fileID: 0}
+  vsyncDropdown: {fileID: 0}
 --- !u!1 &2026316751
 GameObject:
   m_ObjectHideFlags: 0
